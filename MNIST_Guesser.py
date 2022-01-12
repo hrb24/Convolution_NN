@@ -17,16 +17,15 @@ import math
 
 
 def main():
+
+    A =  np.array([[1, 2, 1], [4, 5, 0], [0,1,1]])
+    B =  np.array([[0, 1,3 ], [6, 7,8],[4, 5, 0]])
+    C = [ A,B ]
+    F = np.array([[0, 1,0 ], [0, 0,1],[1, 1, 1]])
     
+    H = convolve (C, F, len(F), 1)
+    print("H",H)
     
-    A = np.ones((3,3))
-    B = np.pad(A,((1,1),(1,1)), 'constant')
-    print(A)
-    print(B)
-    
-    print("")
-    C = B[0:3,0:3]
-    print(C)
 
 
     # Load in data from Keras datasets (type() = ndarray)
@@ -42,13 +41,12 @@ def main():
     test_x = preprocess(test_x)
     
     # Hyper Parameter Initialization
-    # Stride size, S
+    # Stride size, S = 1, is assumed throughout
     # The number of filters involved in each convolution, Ki, is going to follow a doubling
     # patterning, modeled after the VGG model, doubling between convolutions
     # The spacial extent of each filter, F
     # There will be (F-1)/2 amount of zero padding
     # For fully connected layers, decide on lengths of X (input), H1, H2, and Out
-    S = 1
     K1 = 8
     K2 = 16
     F = 3
@@ -57,6 +55,7 @@ def main():
     num_Nodes_H1 = 128
     num_Nodes_H2 = 64
     num_Nodes_Out = 10
+    
     
     # Model Ensemble Loop
     for i in range (5):
@@ -76,7 +75,7 @@ def main():
             FL4[j] = np.random.randn(F, F) / np.sqrt((F*F)/2)
             FL5[j] = np.random.randn(F, F) / np.sqrt((F*F)/2)
             
-        W1 = np.random.randn(X, num_Nodes_H1) / np.sqrt(X/2)
+        W1 = np.random.randn(num_Nodes_X, num_Nodes_H1) / np.sqrt(num_Nodes_X/2)
         W2 = np.random.randn(num_Nodes_H1, num_Nodes_H2) / np.sqrt(num_Nodes_H1/2)
         W3 = np.random.randn(num_Nodes_H2, num_Nodes_Out) / np.sqrt(num_Nodes_H2/2)
         b1 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_H1)).reshape(1, num_Nodes_H1)
@@ -89,9 +88,12 @@ def main():
             # Randomly sample 64 images (i.e. mini batch) from training data
             data_batch = sample_data (train_x, 64)
             for j in data_batch:
-                input = train_x[j]
+                input = [train_x[j]]
                 # Forward Pass
                 # Conv1
+                
+                
+                
                 
                 
             
@@ -129,37 +131,32 @@ def max_pooling ():
     # Max Pooling will be the pooling function used with a 2x2 spacial extent
     return 0
     
-def convolve (input, filter, filter_size, stride, pad_amount, pad_value):
+def convolve (input, filter, filter_size, pad_amount):
     # Save the original input dimensions
-    dim = len(input)
-    print("28 = ",dim)
-    
-    # Zero pad the image
-    input = np.pad(input, ((pad_amount, pad_amount), (pad_amount, pad_amount)), 'constant')
-
+    dim = len(input[0])
+    print("dim", dim)
+    print("input: ", input)
+    # Zero pad the images
+    for i in range(len(input)):
+        input[i] = np.pad(input[i], ((pad_amount, pad_amount), (pad_amount, pad_amount)), 'constant')
+        
+        
+    print(input)
     # Convolve the image using filter
-    convolution = np.zeros(dim, dim)
-    for i in range(dim):
+    convolution = np.zeros((dim, dim))
+    for i in input:
         for j in range(dim):
-            convolution[i,j] = scipy.signal.convolve2d(input[0+i:filter_size+i, 0+j:filter_size+j], filter, mode='full', boundary='fill', fillvalue=0)
-    A = np.ones((3,3))
-    B = np.pad(A,((1,1),(1,1)), 'constant')
-    print(A)
-    print(B)
+            for k in range(dim):
+                convolution[j,k] = convolution[j,k] + np.sum(input[i][0+j:filter_size+j, 0+k:filter_size+k] * filter)
+    # Add the bias
+    convolution = convolution + 0.01
     
-    print("")
-    C = B[0:3,0:3]
-    print(C)
-    scipy.signal.convolve2d(input, in2, mode='full', boundary='fill', fillvalue=0)
-    
-    # Pass convolution to ReLU
-    
-
-    return convolution
+    # Pass convolution to ReLU and return
+    return ReLU(convolution)
 
 def ReLU(x):
     x = (x > 0) * x
-    return(x)
+    return x
 
         
     
