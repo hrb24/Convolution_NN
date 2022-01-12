@@ -15,14 +15,18 @@ import math
 
 def main():
     # Load in data from Keras datasets (type() = ndarray)
-    # train_X = 60000 images, test_X = 10000 images
+    # Note: train_X = 60000 images, test_X = 10000 images
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
-    print("train_X", train_X[0])
     
-    # Pre - processing
-    # Normalize data by dividing all pixel values by 255
-    # Zero center data by subtracting the mean pixel value from all pixels
+    # Convert from int arrays to float arrays
+    train_X = train_X.astype(float)
+    test_X = test_X.astype(float)
     
+    # Pre - Processing data
+    train_X = preprocess(train_X)
+    test_X = preprocess(test_X)
+    
+   
     # Model Ensemble Loop
     for i in range (5):
         # Initialize filter, weight, and bias matrices
@@ -33,35 +37,49 @@ def main():
             # Randomly sample 64 images (i.e. mini batch) from training data
             data_batch = sample_data (train_X, 64)
             for j in data_batch:
-                print(j)
-    
-            # Forward Pass
-            # - Input Layer: 28 x 28 image
-            # - Going to use a stride size, S = 1
-            # - The number of filters is going to follow a 8,16,32 pattern (modeled after the
-            #   VGG model, doubling between convolutions) so that K = 8 then K = 16, etc.
-            # - There will be (F-1)/2 or P = 1 amount of zero padding
-            # - The spacial extent of each filter will be 3x3, i.e. F = 3
-            # - ReLU will be the activation function applied throughout
-            # - Max Pooling will be the pooling function used with a 2x2 spacial extent
+                input = train_X[j]
             
+                # Forward Pass
+                # - Input Layer: 28 x 28 image
+                # - Going to use a stride size, S = 1
+                # - The number of filters is going to follow a 8,16,32 pattern (modeled after the
+                #   VGG model, doubling between convolutions) so that K = 8 then K = 16, etc.
+                # - There will be (F-1)/2 or P = 1 amount of zero padding
+                # - The spacial extent of each filter will be 3x3, i.e. F = 3
+                # - ReLU will be the activation function applied throughout
+                # - Max Pooling will be the pooling function used with a 2x2 spacial extent
             
-            #weights_grad = evaluate_gradient (loss_fun, data_batch, weights)
-            #weights += - step_size * weights_grad # perform parameter update
 
         
-            # Backward Pass
+                # Backward Pass
         
-            # Update parameters
+                # Update parameters
         
         # Store filter, weight, and bias matrices in an array
         # Add array to a dictionary with index i
         
 def sample_data (data, size):
-    arr_random = np.random.randint(1,len(data) + 1,size)
+    # Generate size integers randomly between 0 and len(data) - 1
+    arr_random = np.random.randint(0,len(data),size)
     return arr_random
     
-   
+def preprocess(data):
+    # Normalize the pixel values across images
+    for x in range(len(data)):
+        data[x] = data[x] / 255
+    
+    # Zero center data by subtracting the mean pixel value from all pixels
+    pixel_sum = 0
+    for image in data:
+        pixel_sum = pixel_sum + np.average(image)
+        
+    pixel_mean = pixel_sum / len(data)
+    
+    for x in range(len(data)):
+        data[x] = data[x] - pixel_mean
+    
+    return data
+        
     
 if (__name__ == "__main__"):
     main()
