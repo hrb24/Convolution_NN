@@ -1,0 +1,322 @@
+Convolutional Neural Networks
+
+***  Overview  ***
+1. Pre- process
+2. Choose the architecture
+3. Initialize the NN
+	3.1 Check to make sure the loss is correct for number of classes
+             (i.e. should be -log(1/num_classes))
+     	3.2 Increase the regularization. Loss should also increase
+	3.3 Make sure you can overfit a small batch. Set learning rate low, epochs high,
+	    regularization = 0, and hope to get loss of 0 or accuracy of 1.00
+4. Begin to tweak your learning rate and regularization parameters.
+   Note: Best to sample from log space (i.e reg = 10**uniform(-a,a), lr = 10**uniform(-b,-c)) where
+	 a, b, and c are near-zero integer constants. Once you see what works and what doesn't,
+	 adjust. Always randomly sample and adjust. Don't do an 'exhaustive sweep' as you may miss
+	 some points
+5. Monitor loss and accuracy during this process. Also look at ratio of weight updates to weight magnitudes (want ~ 1e-3, adjust w lr)
+
+
+***  Design  ***
+Input: Image
+
+Convolution Layer 1: Image 1 X Filters (multiple neurons) + Bias = Feature Map 
+Activation: Use ReLU
+Pooling Layer 1: Feature Map undergoes Max Pooling = Image 2
+
+
+
+Convolution Layer 2: Image 2 X Filters (multiple neurons) + Bias = Feature Map
+Activation: Use ReLU
+Pooling Layer 2: Feature Map undergoes Max Pooling = Image 2
+
+NN: Flatten, and Pass
+
+NN main loop code (basic):
+	while True:
+		data_batch = dataset.sample_data_batch()
+		loss = network.forward(data_batch)
+		dx = network.backward()
+		x += - learning_rate * dx
+		x_test = 0.995*x_test + 0.005*x # See model ensembles
+
+
+
+
+
+***  LOSS FUNCTION/ Weight Matrix Optimization  ***
+
+Def: Loss function - quantifies the unhappiness with the scores across the training data
+
+Def: Optimization - efficiently finding the parameters that minimize the loss function
+
+Common loss functions:
+- Multiclass SVM loss
+- Softmax Classifier
+
+SVM:
+
+Given an example (x_i,y_i) where x_i is the image and where y_i is the (integer) label, and using the shorthand for the scores vector S = f(x_i, W), the SVM loss has the form:
+
+L_i = SUM (i /neq j) max (0, S_j - S_(y_i) + 1)  
+Note: If i = j was summed over, for each class label, +1 would be added, hence increasing the loss score by an arbitrary constant
+ 
+Ex:   
+Actual 	CAT	CAR	FROG
+cat	3.2	1.3	2.2
+car	5.1	4.9	2.5
+frog	2.9	2.0	-3.1
+Loss	2.9	0	10.9
+
+Loss for Actual = CAT:
+= max(0,5.1 - 3.2 + 1) + max(0,-1.7 -3.2 + 1)
+= max(0,2.9) + max(0,-3.9)
+= 2.9
+
+Note: Need to use weight regularization (Add a "lambda * R(w)" to the loss function. Encourages smallest values in vector W.
+
+Softmax Classifier (Multinomial Logistic Regression): 
+
+We want to maximize the log likelihood, or (for a loss function) to minimize the negative log likelihood of the correct class. In summary,
+
+L_i = -log[ (e^S_(y_i)) /  SUM (across all js) e^S_j ]
+
+Ex:
+
+Actual 	CAT	
+cat	3.2	exp	24.5	     normalize		0.13
+car	5.1	-->	164.0	       ----->		0.87
+frog	-1.7		0.18	(divide by sum of all)	0.00
+
+Therefore L_i (or L_CAT) = -log(0.13) = 0.89
+
+Note: After first run, loss should be -log(1/numberOfClasses)
+
+For both SVM and Softmax, as optimization runs, want to decrease the step size/learning rate so that you can settle into optimal parameter space
+
+
+To find total Loss, we use 1/N * SUM (i = 1 to i = N) L_i + SUM (across k) (W_k)^2
+
+
+***  BACK PROPOGATION  ***
+
+Uses the concept of a gradient to update the weight matrix, called "gradient descent"
+Gradients can be calculated either numerically (think def of derivative across n dimensions) or analytically
+	- Implement analytically, check numerically
+
+When implementing gradient descent, there are two versions/approaches. Using full data and calculating an exact gradient or using "mini batches" and calculating approx gradients. Mini batch is usually better.
+
+Code Examples:
+
+(Full Data)
+while True:
+     weights_grad = evaluate_gradient(loss_fun, data, weights)
+     weights += - step_size * weights_grad
+
+(Mini Batch)
+while True:
+     # Randomly sample from training data
+     data_batch = sample_training_data (data, 64) 
+     weights_grad = evaluate_gradient (loss_fun, data_batch, weights)
+     weights += - step_size * weights_grad # perform parameter update
+     # Note: Common mini-batch sample sizes are 32/64/128/256 examples
+
+Note: step size is the most important learning parameter
+
+***  Activation Functions  ***
+Common activation functions include:
+Sigmoid function - sigma(x) = 1/(1+e^(-x))
+Tanh - tanh(x)
+ReLU - max(0,x)
+Leaky ReLU - max(0.1x,x)
+
+Sigmoid functions are conceptually simple but not the best for back propagation (i.e. Don't use). Three problems:
+1. Saturated neurons (close to 0 or 1) kill gradient
+2. Sigmoid outputs are not zero centered
+3. exp() is computationally expensive
+
+Tanh is better than sigmoid since it is zero centered but it still kills gradients when saturated  
+
+ReLU (Rectified Linear Unite) is the most common (Default recommendation). Computes f(x) = max(0,x). Good for three reasons:
+1. Does not saturate in the + region
+2. Very computationally efficient
+3. Converges much faster than sigmoid/tanh functions (e.g. 6x)
+BUT not zero centered and when x<0, gradient is killed
+	- To help solve this problem, set the bias to something like 0.01 so that killed 
+	  gradients may re-enter
+	- Some dispute that this does not work however
+
+(Parametric) Leaky ReLU. Computes f(x) = max(0.01x,x) or f(x) = max(alpha * x, x). Good because:
+1. Does not saturate 
+2. Very computationally efficient
+3. Converges much faster than sigmoid/tanh functions (e.g. 6x)
+4. Will not die
+
+***  Data Preprocessing  ***
+- Zero center data (by subtracting the mean of each attribute from each attribute)
+- Normalize (using stdv)
+- Decorrelate data (data has diagonal covariance matrix)
+- Whiten data (covariance matrix is the identity matrix)
+
+In image CNNs, typically only zero center data by subtracting the per-channel (channels = RGB) mean from each channel (i.e. [R,G,B] --> [R-R_bar, G-G_bar, B-B_bar]). Normalization not necessary since all data is between 0-255.
+
+
+***  Weight initialization  ***
+BE CAREFUL!
+W = 0
+     - Does not work. Gradient is quickly turned to 0 in back prop
+W is a small random number (i.e. gaussian with zero mean and 1e-2 stdv)
+     - Issue: Only works with small NN. Since W is so small, the input to each layer
+       approaches zero in the forward pass and then on back propagation, the gradient
+       approaches zero. No update
+W is close to 1
+     - Almost all neurons are saturated. Gradients will all be zero
+W = np.random.randn(number_input, number_output) / np.sqrt(number_input)
+     - Works decent for tanh but not for ReLU
+W = np.random.randn(number_input, number_output) / np.sqrt(number_input/2)
+     - Divide by 2 so that variance isn't halved when ReLU takes max
+
+***  Batch Normalization  ***
+- Forces the input to each tanh (or ReLU) layer to be Gaussian but then provides parameters that can be back propagated on to either stretch or shift the gauss distribution. Usually inserted after fully connected layers or convolution layers or nonlinearities.
+
+1. Compute the empirical mean and variancee independently for each dimension/attribute
+2. Normalize:
+
+x_k_new = (x_k - E[x_k])/ (Var[x_k])^0.5 
+
+3. Add parameters to shift:
+
+y_k = gamma_k * x_k_new + beta_k
+Note: Typically initialize gamma_k to 1 and beta_k to 0
+
+Example:
+
+Input: Values of x over a mini-batch: Beta = {x_1 ... m}; parameters learned: gamma and beta
+Output: {y_i = BN_gamma,beta(x_i)}
+
+mini-batch mean (Mu_batch): 1/m (SUM x_i)
+mini-batch variance (Sigma_batch): 1/m (SUM (x_i - Mu_batch)^2)
+normalize: (x_i - Mu_batch)/(Sigma_batch)^0.5
+scale and shift: y_i = gamma * x_i + beta = N_gamma,beta(x_i)
+
+Note: In a test time situation, use data set mean and variance, not sample/mini-batch!
+
+
+***  Overfitting vs. Number of Neurons  ***
+The rule of thumb is to always use as many neurons as possible (usually a memory/cpu processing upper bound) and then combat over fitting using a regularization function/ learning rate. (i.e. Do not use the size of neural network as a regularizer. Use stronger regularization instead)
+
+
+***  Width ( Number of Hidden Layers ) vs Depth ( Number of Neurons per Hidden Layer)  ***
+Depth is important and so is Width. If data set is relatively simple (dimension wise), only need a width of ~1-5. More complex data = more width. Width usually is capped at 10 or by CPU limits.
+
+***  Small Data Set?  ***
+If your data set is really small, you can use a pre trained ConvNet (available online or through "Caffe Model Zoo". This gives the matrix weights and then you 'fine-tune' weights using your small amount of data
+
+
+***  Mini - Batch SGD  ***
+Process of finding optimal matrix for weights. Uses small batches from the larger data set. Process is a loop:
+1. Sample, randomly, a batch of data
+2. Forward propagate through the graph, calculate loss
+3. Backward propagate to calculate the gradients of inputs
+4. Update the parameters (values in weight matrixes) using the gradient
+
+***  Kernels/Filters  ***
+These are initially randomized and then updated using back proportions 
+
+***  Parameter Updates  ***
+
+SGD (Stochastic Gradient Descent) is most basic way to update, but its slow. Takes the form: 
+x += = learning_rate * dx
+
+A simple update is to use 'momentum'. New form becomes:
+
+v = mu * v - learning_rate * dx # integrate velocity
+x += v # integrate position
+
+Note: mu is a fixed parameter (usually ~0.5 or 0.9) and v is initialized to 0
+
+Nesterov Momentum Update goes one step further. Instead of calculating the momentum and the gradient separately and then summing, it calculates the gradient after the momentum has been taken into account. Code becomes:
+
+v_prev = v
+v = mu * v - learning_rate * dx
+x += -mu * v_prev + (1 + mu) * v
+
+Slight shift occurs with a method called Adagrad. Uses a decay of gradient to speed up/ slow down movement. Issue is that it often stops too soon! Code:
+
+cache += dx**2
+x += - learning_rate * dx / (np.sqrt(cache) + 1e-7)
+
+Note: cache is initialized to 0 and the 1e-7 is used to prevent div by 0
+
+To fix the "stop too soon" issue, we have RMSProp which makes the cache variable a leaky variable. Code:
+
+cache = decay_rate * cache + (1 - decay_rate) * dx**2
+x += - leanring_rate * dx / (np.sqrt(cache) + 1e-7)
+
+***  Learning Rates  ***
+What is the best learning rate? (Hint: Not a constant)
+Learning rate should decay over time. Usually exponential decay is the best way to do it. 
+
+***  Model Ensembles  ***
+1. Train multiple models
+2. At test time, average their results
+--> Enjoy ~2% extra performance
+
+Error: Can be very time intensive
+Solution: Use/ ensemble over only a few checkpoints OR ensemble over weight vector updates (and use this at test time).
+
+***  Regularization (dropout)  ***
+Idea: Randomly set some neurons to zero in the forward pass. Need to be careful not to rescale at test time (i.e. we want output_test_time = output_train_time). Include a '/p' in the dropout masks (called 'inverted dropout)
+
+Ex:
+
+p = 0.5 # Probability of keeping a unit active. Higher = less dropout
+def train_step(X):
+	# X is the input data
+	# Forward pass (for example 3-layer NN) using ReLU activation function
+	H1 = np.maximum(0, np.dot(W1,X) + b1)
+	U1 = (np.random.rand(*H1.shape) < p) / p # First dropout mask with '/p' to prevent rescale
+	H2 = np.maximum(0, np.dot(W2,H1) + b2)
+	U2 = (np.random.rand(*H2.shape) < p) # Second dropout mask with '/p' to prevent rescale
+	out = np.dot(W3, H2) + b3
+
+	# Backward pass: compute gradients (not shown)
+	# Perform parameter update (not shown)
+
+def predict(X):
+	# ensemble forward pass
+	H1 = np.maximum(0, np.dot(W1, X) + b1) 
+	H2 = np.maximum(0, np.dot(W2,H1) + b2) 
+	out = np.dot(W3,H2) + b3
+
+
+***  Convolution NN  ***
+Convolution Layer:
+32x32x3 image
+5x5x3 filter, w_1 ... n (filter bank)
+- Compute the dot product between the filter and a small 5x5x3 chunk of the image PLUS bias for each 
+  filter. The number of filters, K, should be a power of 2 (Note: In this example, K = 6)
+	-> Result is a 28x28x6 activation map (28 = unique locations of 5x5 in 32x32 and then 6 
+           filters)
+- Apply ReLU
+Note: In next CONV layer, each filter is 5x5x6 now!
+Note: Also note that the spacial size of each layer is decreasing (32 -> 28 -> 24 etc) which is bad since it limits number of layers possible 
+
+Note: Stride size of 1 is common
+
+What is the new feature layer size? For an NxN input with a FxF filter
+Output size: (N-F)/stride + 1
+Padding: If stride of 1, FxF filter and NxN input, common to use (F-1)/2 zero padding
+
+ReLU (or other activation function if you please) Layer:
+Apply ReLU element wise to each activation layer
+
+Pooling Layer:
+Use Max Pooling to shrink the size of the convolution layers down
+
+
+
+
+
+
+
