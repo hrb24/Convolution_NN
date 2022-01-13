@@ -19,12 +19,20 @@ import math
 def main():
 
     A =  np.array([[1, 2, 1], [4, 5, 0], [0,1,1]])
-    B =  np.array([[0, 1,3 ], [6, 7,8],[4, 5, 0]])
-    C = [ A,B ]
-    F = np.array([[0, 1,0 ], [0, 0,1],[1, 1, 1]])
+    A = np.array([A])
+    #B =  np.array([[0, 1,3 ], [6, 7,8],[4, 5, 0]])
+  
+    F1 = np.array([[0,1,0 ], [0,0,1],[1, 1, 1]])
+    F2 = np.array([[1,1,0 ], [1,0,1],[1, 0, 0]])
+    C = np.array([F1,F2])
     
-    H = convolve (C, F, len(F), 1)
-    print("H",H)
+    for i in C:
+        print("i: ",i)
+        print("i.shape: ", i.shape)
+        H = convolve (A, i, 1)
+        print("H",H)
+    
+    
     
 
 
@@ -88,9 +96,12 @@ def main():
             # Randomly sample 64 images (i.e. mini batch) from training data
             data_batch = sample_data (train_x, 64)
             for j in data_batch:
-                input = [train_x[j]]
+                input = np.array([train_x[j]])
                 # Forward Pass
                 # Conv1
+                for i in FL1:
+                    convolve (input, i, P)
+                    
                 
                 
                 
@@ -111,46 +122,49 @@ def sample_data (data, size):
     arr_random = np.random.randint(0,len(data),size)
     return arr_random
     
+    
 def preprocess(data):
     # Normalize the pixel values across images
     for x in range(len(data)):
         data[x] = data[x] / 255
-    
     # Zero center data by subtracting the mean pixel value from all pixels
+    # Calculate mean pixel value
     pixel_sum = 0
     for image in data:
         pixel_sum = pixel_sum + np.average(image)
     pixel_mean = pixel_sum / len(data)
-    
+    # Subtract
     for x in range(len(data)):
         data[x] = data[x] - pixel_mean
     
     return data
     
+    
 def max_pooling ():
     # Max Pooling will be the pooling function used with a 2x2 spacial extent
     return 0
     
-def convolve (input, filter, filter_size, pad_amount):
-    # Save the original input dimensions
+    
+def convolve (input, filter, pad_amount):
+    print("input: ",input)
+    # Note: The parameter input is an array of one or more arrays
+    # Save the original input array dimensions (height and width)
     dim = len(input[0])
-    print("dim", dim)
-    print("input: ", input)
-    # Zero pad the images
+    # Zero pad the images by first creating an empty resized array and then populating it
+    pad_input = np.empty([len(input), dim+(2*pad_amount), dim+(2*pad_amount)])
+    print("pad_input.shape: ",pad_input.shape)
     for i in range(len(input)):
-        input[i] = np.pad(input[i], ((pad_amount, pad_amount), (pad_amount, pad_amount)), 'constant')
-        
-        
-    print(input)
+        print("i: ",i)
+        print("input[i]: ",input[i])
+        pad_input[i] = np.pad(input[i], ((pad_amount, pad_amount), (pad_amount, pad_amount)), 'constant')
     # Convolve the image using filter
     convolution = np.zeros((dim, dim))
-    for i in input:
+    for i in range(len(pad_input)):
         for j in range(dim):
             for k in range(dim):
-                convolution[j,k] = convolution[j,k] + np.sum(input[i][0+j:filter_size+j, 0+k:filter_size+k] * filter)
+                convolution[j,k] = convolution[j,k] + np.sum(pad_input[i][0+j:len(filter)+j, 0+k:len(filter)+k] * filter)
     # Add the bias
     convolution = convolution + 0.01
-    
     # Pass convolution to ReLU and return
     return ReLU(convolution)
 
