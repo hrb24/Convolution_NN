@@ -12,48 +12,19 @@ import math
 # The layer order will be as follows:
 # Conv1, Conv2, Pool1, Conv3, Conv4, Conv5, Pool2, FC1, FC2, Output
 # Both Mini - Batch SGD and a model ensemble (N = 5) will be used to improve accuracy
-# A ReLU activation function will be used as will Max Pooling
+# A Leaky ReLU activation function will be used as will Max Pooling
 # Note: This program assumes the images are 28x28 and BW scale
 
 
 def main():
     # For printing, change precision to 3 decimals and suppress scientific notation
     np.set_printoptions(precision =3, linewidth = 250, suppress = True, threshold = np.inf)
-
-    A =  np.array([[1, 2, 1], [4, 5, 0], [0,1,1]])
-    A = np.array([A])
-    B =  np.array([[0, 1,3 ], [6, 7,8],[4, 5, 0]])
-  
-    F1 = np.array([[0,1,0 ], [0,0,1],[1, 1, 1]])
-    F2 = np.array([[1,1,0 ], [1,0,1],[1, 0, 0]])
-    C = np.array([F1,F2])
     
-    FM1 = np.empty([len(C), len(A[0]), len(A[0])])
-    for i in range(len(C)):
-        print("i: ",i)
-        print("C[i]: ",C[i])
-        print("C[i].shape: ", C[i].shape)
-        H = convolve (A, C[i], 1)
-        print("H",H)
-        FM1[i] = H
+    A = np.array([[2],[2],[0],[2]])
+    print("A.shape: ",A.shape," A: ",A)
     
-    print("FM1: ",FM1)
-    
-    M1 = np.array([[1, 1, 1, 0], [1,1, 5, 0], [6,0,1,1], [7,0,2,1]])
-    M2 = np.array([[1, 3, 4, 0], [1,2, 5, 9], [0,0,0,1], [5,0,0,3]])
-    M3 = np.array([[0, 2, 9, 0], [1,1, 3, 2], [5,4,0,0], [0,0,3,0]])
-    print("M1: ",M1)
-    print("M2: ",M2)
-    print("M3: ",M3)
-    
-    TP = np.array([M1,M2,M3])
-    print("TP: ",TP)
-    
-    PI = max_pooling(TP)
-    print("PI: ",PI)
-    
-    
-    
+    C = (x > 0) * x
+    print("C: ",C)
 
     # Load in data from Keras datasets (type() = ndarray)
     # Note: train_x = 60000 images, test_x = 10000 images
@@ -102,12 +73,12 @@ def main():
             FL4[j] = np.random.randn(F, F) / np.sqrt((F*F)/2)
             FL5[j] = np.random.randn(F, F) / np.sqrt((F*F)/2)
             
-        W1 = np.random.randn(num_Nodes_X, num_Nodes_H1) / np.sqrt(num_Nodes_X/2)
-        W2 = np.random.randn(num_Nodes_H1, num_Nodes_H2) / np.sqrt(num_Nodes_H1/2)
-        W3 = np.random.randn(num_Nodes_H2, num_Nodes_Out) / np.sqrt(num_Nodes_H2/2)
-        b1 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_H1)).reshape(1, num_Nodes_H1)
-        b2 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_H2)).reshape(1, num_Nodes_H2)
-        b3 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_Out)).reshape(1, num_Nodes_Out)
+        W1 = np.random.randn(num_Nodes_H1, num_Nodes_X) / np.sqrt(num_Nodes_X/2)
+        W2 = np.random.randn(num_Nodes_H2, num_Nodes_H1, ) / np.sqrt(num_Nodes_H1/2)
+        W3 = np.random.randn(num_Nodes_Out, num_Nodes_H2) / np.sqrt(num_Nodes_H2/2)
+        b1 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_H1)).reshape(num_Nodes_H1, 1)
+        b2 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_H2)).reshape(num_Nodes_H2, 1)
+        b3 = np.array(np.random.uniform(-0.5,0.5,num_Nodes_Out)).reshape(num_Nodes_Out, 1)
         
         
         # Loop through mini batches until the loss converges
@@ -116,44 +87,78 @@ def main():
             # Randomly sample 64 images (i.e. mini batch) from training data
             data_batch = sample_data (train_x, 64)
             for j in data_batch:
-                print("j: ",j)
-                print("train_y[j]: ",train_y[j])
                 input = np.array([train_x[j]])
-                print("input: ",input)
                 # Forward Pass
                 # Conv1
                 FM1 = np.empty([len(FL1), len(input[0]), len(input[0])])
                 for i in range(len(FL1)):
                     FM1[i] = convolve (input, FL1[i], P)
-                print("FM1: ",FM1)
                 # Conv2
                 FM2 = np.empty([len(FL2), len(FM1[0]), len(FM1[0])])
                 for i in range(len(FL2)):
                     FM2[i] = convolve (FM1, FL2[i], P)
-                print("FM2: ",FM2)
                 # Pool1
                 PL1 = max_pooling(FM2)
-                print("PL1: ",PL1)
                 # Conv3
                 FM3 = np.empty([len(FL3), len(PL1[0]), len(PL1[0])])
                 for i in range(len(FL3)):
                     FM3[i] = convolve (PL1, FL3[i], P)
-                print("FM3: ",FM3)
                 # Conv4
                 FM4 = np.empty([len(FL4), len(FM3[0]), len(FM3[0])])
                 for i in range(len(FL4)):
                     FM4[i] = convolve (FM3, FL4[i], P)
-                print("FM4: ",FM4)
                 # Conv5
                 FM5 = np.empty([len(FL5), len(FM4[0]), len(FM4[0])])
                 for i in range(len(FL5)):
                     FM5[i] = convolve (FM4, FL5[i], P)
-                print("FM5: ",FM5)
                 # Pool2
                 PL2 = max_pooling(FM5)
+                # Flatten and reshape PL2 for input to the FC layer
+                FC_input = PL2.flatten()
+                FC_input = np.reshape(FC_input, (len(FC_input), 1))
+                print("FC_input.shape: ", FC_input.shape)
                 
-                print("PL2: ",PL2)
-                print("PL2.shape: ",PL2.shape)
+                # Forward pass using Leaky_ReLU activation function and dropout
+                p = 0.5 # Probability of keeping a unit active. Higher = less dropout
+                H1 = np.maximum(0, np.dot(W1,FC_input) + b1)
+                U1 = (np.random.rand(*H1.shape) < p) / p
+                H2 = np.maximum(0, np.dot(W2,H1) + b2)
+                U2 = (np.random.rand(*H2.shape) < p)
+                out = np.dot(W3, H2) + b3
+                print("out.shape: ",out.shape)
+                # Pass output to soft max loss function to generate error
+                #error = soft_max(out)
+                #print(error)
+    
+                # Back Propagate
+                # Calculate error of output layer
+                #errOutput = outputLayerOutput * (1 - outputLayerOutput) * (row['tag'] - outputLayerOutput)
+                
+                # Calculate error of hidden layer
+                #I = np.identity(numNodesHidden)
+                #D = np.identity(numNodesHidden) * np.outer(np.ones(numNodesHidden), hiddenLayerOutput)
+                
+                
+                #errHidden = hiddenLayerOutput @ (I-D) @ (np.identity(numNodesHidden) * np.outer(np.ones(numNodesHidden), errOutput * W2))
+                
+                
+                # Calculate change in weights and bias
+                #deltaW1 = learnRate * np.outer(inputLayer, errHidden)
+                #deltaW2 = learnRate * np.outer(hiddenLayerOutput, errOutput)
+                #deltaB1 = learnRate * errHidden
+                #deltaB2 = learnRate * errOutput
+                
+                # Update weight and bias matrices
+               # W1 = W1 + deltaW1
+                #W2 = W2 + deltaW2
+                #B1 = B1 + deltaB1
+                #B2 = B2 + deltaB2
+
+    # Backward pass: compute gradients (not shown)
+    # Perform parameter update (not shown)
+                
+                
+                
                 
                 
                 
@@ -230,7 +235,7 @@ def convolve (input, filter, pad_amount):
                 convolution[j,k] = convolution[j,k] + np.sum(pad_input[i][0+j:len(filter)+j, 0+k:len(filter)+k] * filter)
     # Add the bias
     convolution = convolution + 0.05
-    # Pass convolution to ReLU and return
+    # Pass convolution to Leaky ReLU and return
     return Leaky_ReLU(convolution)
 
 
@@ -238,6 +243,11 @@ def Leaky_ReLU(x):
     x = np.maximum(0.1* x, 0)
     return x
 
+#def soft_max(input):
+    #exp = np.exp(input)
+    #a = (exp / np.sum(exp))
+    #print("a: ",a)
+    #return(exp / np.sum(exp))
         
     
 if (__name__ == "__main__"):
