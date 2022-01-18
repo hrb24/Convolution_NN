@@ -23,8 +23,6 @@ def main():
     A = np.array([[2],[2],[0],[2]])
     print("A.shape: ",A.shape," A: ",A)
     
-    C = (x > 0) * x
-    print("C: ",C)
 
     # Load in data from Keras datasets (type() = ndarray)
     # Note: train_x = 60000 images, test_x = 10000 images
@@ -120,18 +118,34 @@ def main():
                 
                 # Forward pass using Leaky_ReLU activation function and dropout
                 p = 0.5 # Probability of keeping a unit active. Higher = less dropout
-                H1 = np.maximum(0, np.dot(W1,FC_input) + b1)
+                H1 = Leaky_ReLU(np.dot(W1,FC_input) + b1)
+                print("W1.shape: ",W1.shape)
+                print("H1.shape: ",H1.shape)
                 U1 = (np.random.rand(*H1.shape) < p) / p
-                H2 = np.maximum(0, np.dot(W2,H1) + b2)
+                H2 = Leaky_ReLU(np.dot(W2,H1) + b2)
+                print("W2.shape: ", W2.shape)
+                print("H2.shape: ",H2.shape)
                 U2 = (np.random.rand(*H2.shape) < p)
-                out = np.dot(W3, H2) + b3
+                out = Leaky_ReLU(np.dot(W3, H2) + b3)
                 print("out.shape: ",out.shape)
+                print("W3.shape: ", W3.shape)
                 # Pass output to soft max loss function to generate error
                 #error = soft_max(out)
                 #print(error)
     
                 # Back Propagate
+                # Create a "true" array
+                expected_arr = np.zeros(out.shape)
+                expected_arr[train_y[j]] = 1
                 # Calculate error of output layer
+                err_output = np.empty(out.shape)
+                for i in range(len(out)):
+                    if (out[i] < 0):
+                        err_output[i] = 0.1 * expected_arr[i]
+                    else:
+                        err_output[i] = 1 * expected_arr[i]
+
+                print("err_output.shape: ",err_output.shape)
                 #errOutput = outputLayerOutput * (1 - outputLayerOutput) * (row['tag'] - outputLayerOutput)
                 
                 # Calculate error of hidden layer
@@ -240,7 +254,7 @@ def convolve (input, filter, pad_amount):
 
 
 def Leaky_ReLU(x):
-    x = np.maximum(0.1* x, 0)
+    x = np.maximum(0.1*x, x)
     return x
 
 #def soft_max(input):
