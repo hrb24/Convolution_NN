@@ -20,8 +20,12 @@ def main():
     # For printing, change precision to 3 decimals and suppress scientific notation
     np.set_printoptions(precision =3, linewidth = 250, suppress = True, threshold = np.inf)
     
-    A = np.array([[2],[2],[0],[2]])
+    A = np.array([[1,5],[2,4]]) # H2
+    B = np.array([[0],[1]]) # DL/DSj
     print("A.shape: ",A.shape," A: ",A)
+    print("B.shape: ",B.shape," B: ",B)
+    print("np.dot(np.transpose(A),B): ", np.dot(np.transpose(A),B))
+    print("np.transpose(A) @ B): ", np.transpose(A) @ B)
     
 
     # Load in data from Keras datasets (type() = ndarray)
@@ -126,7 +130,7 @@ def main():
                 print("W2.shape: ", W2.shape)
                 print("H2.shape: ",H2.shape)
                 U2 = (np.random.rand(*H2.shape) < p)
-                out = Leaky_ReLU(np.dot(W3, H2) + b3)
+                out = np.dot(W3, H2) + b3
                 print("out.shape: ",out.shape)
                 print("W3.shape: ", W3.shape)
                 # Pass output to soft max loss function to generate error
@@ -134,6 +138,8 @@ def main():
                 #print(error)
     
                 # Back Propagate
+                
+            
                 # Create a "true" array
                 expected_arr = np.zeros(out.shape)
                 expected_arr[train_y[j]] = 1
