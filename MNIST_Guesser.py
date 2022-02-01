@@ -7,6 +7,22 @@ import cv2
 import os
 import math
 
+# Sources:
+#   https://mmuratarat.github.io/2019-02-10/derivative-of-softmax-loss
+#   http://bigstuffgoingon.com/blog/posts/softmax-loss-gradient/
+#   https://towardsdatascience.com/an-introduction-to-neural-networks-with-implementation-from-scratch-using-python-da4b6a45c05b
+#   https://towardsdatascience.com/implementing-alexnet-cnn-architecture-using-tensorflow-2-0-and-keras-2113e090ad98
+#   https://www.andreaperlato.com/aipost/cnn-and-softmax/
+#   https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
+#   https://www.analyticsvidhya.com/blog/2021/08/beginners-guide-to-convolutional-neural-network-with-implementation-in-python/
+#   https://becominghuman.ai/back-propagation-in-convolutional-neural-networks-intuition-and-code-714ef1c38199
+#   https://www.youtube.com/watch?v=i94OvYb6noo&list=PLkt2uSq6rBVctENoVBg1TpCC7OQi31AlC&index=6
+#   https://pavisj.medium.com/convolutions-and-backpropagations-46026a8f5d2c
+#   https://medium.com/analytics-vidhya/convolutional-neural-networks-and-backpropagation-using-numpy-4da2c9d14fdd
+#   https://www.youtube.com/watch?v=qlLChbHhbg4
+#   https://www.youtube.com/watch?v=wzy8jI-duEQ
+#   https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6
+
 # // CNN Program Structure Overview  //
 # A structure similar to the VGGNet [Simonyan and Zisserman, 2014] will be used
 # The layer order will be as follows:
@@ -18,7 +34,7 @@ import math
 
 def main():
     # For printing, change precision to 3 decimals and suppress scientific notation
-    np.set_printoptions(precision =3, linewidth = 250, suppress = True, threshold = np.inf)
+    np.set_printoptions(precision = 3, linewidth = 250, suppress = True, threshold = np.inf)
     
     A = np.array([[1,5],[2,4]]) # H2
     B = np.array([[0],[1]]) # DL/DSj
